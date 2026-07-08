@@ -52,7 +52,7 @@ $$phi(i)_{m,c} = V_center,c * exp( -t_m * mu_c )$$
 
 For magnetic mode the complex coordinate is split into real/imaginary parts ($$reim$$ features).
 
-### 3. SE(d)-invariant geometric features `[N6]`
+### 3. SE(d)-invariant geometric features 
 
 This is the key geometric contribution. On each patch, using relative positions
 $$p_j - p_i$$ (translation-invariant, rotation-**equivariant**):
@@ -130,16 +130,16 @@ Input:  <graph>_nodes.csv   (col 1 = id, cols 2..d+1 = coordinates in R^d)
     ├─ per-node loop ───────────────────────────────► nodePE
     │     ├─ r-hop patch
     │     ├─ magnetic OR undirected normalized Laplacian
-    │     ├─ bottom-k eigenpairs  ──► canonical frame [N1/N2]
+    │     ├─ bottom-k eigenpairs  ──► canonical frame 1/N2]
     │     ├─ heat-kernel diffusion coordinate over T
-    │     ├─ [N6] SE(d)-invariant geometric features
-    │     └─ [N5] flow-imbalance scalar (optional)
+    │     ├─ SE(d)-invariant geometric features
+    │     └─ flow-imbalance scalar (optional)
     │
     ├─ synchronization (optional) ──────────────────► syncPE
-    │     ├─ per-edge unitary Procrustes transport [N13]
+    │     ├─ per-edge unitary Procrustes transport
     │     └─ connection Laplacian → smallest eigenvectors
     │
-    └─ graph readout [N7] ──────────────────────────► graphPE
+    └─ graph readout ──────────────────────────────► graphPE
 
   batch_gcsf_embed(inputFolder, outputFolder, params)
       runs gcsf_embed over every *_nodes.csv / *_edges.csv pair
@@ -161,13 +161,13 @@ Input:  <graph>_nodes.csv   (col 1 = id, cols 2..d+1 = coordinates in R^d)
 | `self_tuned`            | self-tuning bandwidth                              | `true`           |
 | `use_magnetic`          | magnetic (directed) Laplacian                      | `false`          |
 | `magnetic_q`            | magnetic charge                                    | 0.25             |
-| `adaptive_q`            | scale `q` by local flow imbalance `[N3]`           | `false`          |
-| `geom_features`         | SE(d)-invariant geometry `[N6]`                    | `true`           |
+| `adaptive_q`            | scale `q` by local flow imbalance                  | `false`          |
+| `geom_features`         | SE(d)-invariant geometry                           | `true`           |
 | `geom_kframe`           | # spectral–geometric frames                        | 4                |
 | `compute_sync`          | build synchronized encoding                        | `false`          |
 | `sync_dim`              | # synchronized eigenvectors                        | 1                |
-| `readout_cov`           | covariance pooling in readout `[N7]`               | `true`           |
-| `readout_spectral`      | spectral-distribution pooling `[N7]`               | `true`           |
+| `readout_cov`           | covariance pooling in readout                      | `true`           |
+| `readout_spectral`      | spectral-distribution pooling                      | `true`           |
 
 ---
 
