@@ -3,7 +3,7 @@
 **Gauge-consistent, SE(d)-invariant spectral positional encodings for directed spatial graphs.**
 
 GCSF-Embed (**G**eometric/Graph **C**onnection **S**pectral **F**eatures) computes positional
-encodings for graphs whose nodes carry coordinates in `R^d` (any dimension) and whose edges may be
+encodings for graphs whose nodes carry coordinates in $$R^d$$ (any dimension) and whose edges may be
 **directed**. It fuses per-patch magnetic-Laplacian spectra with global connection-Laplacian
 synchronization, and augments both with SE(d)-invariant geometric features derived from equivariant
 contractions. The output representation is stable under rigid motions (rotation + translation) in any
@@ -15,19 +15,19 @@ dimension, while retaining local structural and geometric information.
 
 ### 1. Weighted directed graph
 
-From node coordinates `x_i ∈ R^d` and a directed edge set, build a distance-based weight matrix.
+From node coordinates $$x_i ∈ R^d$$ and a directed edge set, build a distance-based weight matrix.
 Weights depend only on Euclidean distances, so they are already rotation/translation invariant:
 
 
 $$W_ij = exp( -||x_i - x_j||^2 / (sigma_i * sigma_j) )     \quad\text{(self-tuned bandwidth)}$$
 
 
-with per-node bandwidth `sigma_i` set from the k-th nearest neighbor (self-tuning). A fixed global
-bandwidth `alpha` is also available.
+with per-node bandwidth $$sigma_i$$ set from the k-th nearest neighbor (self-tuning). A fixed global
+bandwidth $$alpha$$ is also available.
 
 ### 2. Per-node local spectra (`nodePE`)
 
-For each node `i`, extract its `r`-hop patch and build a normalized Laplacian on that patch.
+For each node $$i$$, extract its $$r$$-hop patch and build a normalized Laplacian on that patch.
 
 **Undirected mode** — symmetric normalized Laplacian:
 
@@ -42,37 +42,31 @@ $$ Theta_ij = 2*pi*q * (A_ij - A_ji)         \quad\text{(antisymmetric phase fro
 $$ H_q       = W_sym ⊙ exp(i * Theta)         \quad\text{(Hermitian)} $$
 $$ L         = I - D^{-1/2} H_q D^{-1/2} $$
 
-The magnetic charge `q` controls how strongly direction is encoded. The bottom-`k` eigenvectors are
+The magnetic charge $$q$$ controls how strongly direction is encoded. The bottom-$$k$$ eigenvectors are
 taken, and the center node's row is turned into a multi-scale **heat-kernel diffusion coordinate**
-across diffusion times `T = {t_1, ..., t_M}`:
+across diffusion times $$T = {t_1, ..., t_M}$$:
 
-```
-phi(i)_{m,c} = V_center,c * exp( -t_m * mu_c )
-```
+$$phi(i)_{m,c} = V_center,c * exp( -t_m * mu_c )$$
 
-For magnetic mode the complex coordinate is split into real/imaginary parts (`reim` features).
+For magnetic mode the complex coordinate is split into real/imaginary parts ($$reim$$ features).
 
 ### 3. SE(d)-invariant geometric features `[N6]`
 
 This is the key geometric contribution. On each patch, using relative positions
-`p_j - p_i` (translation-invariant, rotation-**equivariant**):
+$$p_j - p_i$$ (translation-invariant, rotation-**equivariant**):
 
 - **Spectral–geometric frame vectors** fuse spectral structure with geometry:
 
-  ```
-  g_c = sum_j V(j,c) * (p_j - p_i)  ∈ R^d      (rotation-equivariant)
-  ```
+  $$g_c = sum_j V(j,c) * (p_j - p_i)  ∈ R^d      \quad\text{(rotation-equivariant)}$$
 
 - **Contract to invariants.** Inner products and norms of equivariant vectors are rotation-invariant
   *scalars* that still encode lengths and angles:
 
-  ```
-  Gram_{c,c'} = <g_c, g_c'>          (invariant; encodes angles + lengths)
-  ||g_c||                             (invariant)
-  eig( sum_j w_j (p_j - p_i)(p_j - p_i)^T )   (local covariance spectrum; anisotropy/shape)
-  ```
+  $$Gram_{c,c'} = <g_c, g_c'>          \quad\text{(invariant; encodes angles + lengths)}$$
+  $$||g_c||                             \quad\text{(invariant)}$$
+  $$eig( sum_j w_j (p_j - p_i)(p_j - p_i)^T )   \quad\text{(local covariance spectrum; anisotropy/shape)}$$
 
-Under a rigid motion `p -> R p + t` (with `R ∈ SO(d)`), every `g_c -> R g_c`, so all inner products
+Under a rigid motion $$p -> R p + t$$ (with $$R ∈ SO(d)$$), every $$g_c -> R g_c$$, so all inner products
 and all covariance eigenvalues are unchanged. This holds in **any dimension** — only inner products
 are used, no cross products. (Verified numerically to machine precision for d = 2, 3, 4, 5, 7.)
 
@@ -82,17 +76,15 @@ Patch eigenframes are only defined up to a rotation (real) or unitary phase (com
 globally consistent, GCSF-Embed builds a **connection Laplacian** (vector-diffusion-maps style):
 
 - For each edge, solve a **Procrustes** problem on the overlapping nodes to get the best transport map
-  `Q_ij` aligning the two patch frames. For complex (magnetic) frames this is a **unitary** map
-  (`Q Q^H = I`), obtained from the SVD of the conjugate cross-correlation:
+  $$Q_ij$$ aligning the two patch frames. For complex (magnetic) frames this is a **unitary** map
+  ($$Q Q^H = I$$), obtained from the SVD of the conjugate cross-correlation:
 
-  ```
-  X = V_j^H V_i,   X = U S W^H,   Q_ij = W U^H
-  ```
+  $$X = V_j^H V_i,   X = U S W^H,   Q_ij = W U^H$$
 
-- Assemble the Hermitian connection Laplacian with blocks `-w_ij Q_ij` (and `Q_ij^H` on the
+- Assemble the Hermitian connection Laplacian with blocks $$-w_ij Q_ij$$ (and $$Q_ij^H$$ on the
   transpose), then take its smallest eigenvectors to obtain globally synchronized coordinates.
 
-Using the conjugate transpose throughout guarantees `H` is exactly Hermitian and positive
+Using the conjugate transpose throughout guarantees $$H$$ is exactly Hermitian and positive
 semidefinite for complex frames, and reduces to the standard orthogonal construction for real frames.
 
 ### 5. Graph readout (`graphPE`)
@@ -108,14 +100,14 @@ A permutation-invariant, SE(d)-invariant graph vector, pooling the invariant nod
 
 ## Complexity
 
-For bounded-degree graphs and constant dimension `d`:
+For bounded-degree graphs and constant dimension $$d$$:
 
-- **Per node:** `O(s^2 k)` patch eigensolve + `O(s k d + s d^2 + d^3)` geometry, where `s` is the
-  patch size (`s = O(dbar^r)` for average degree `dbar` and radius `r`).
-- **Synchronization:** `O(m k^3)` transport + a sparse Hermitian eigensolve on an `nk x nk` operator.
+- **Per node:** $$O(s^2 k)$$ patch eigensolve + $$O(s k d + s d^2 + d^3)$$ geometry, where $$s$$ is the
+  patch size ($$s = O(dbar^r)$$ for average degree $$dbar$$ and radius $$r$$).
+- **Synchronization:** $$O(m k^3)$$ transport + a sparse Hermitian eigensolve on an $$nk x nk$$ operator.
 
-This is **functionally linear in `n`** for bounded-degree graphs. Dense eigen-decomposition fallbacks
-(for tiny patches or non-convergence) are `O(s^3)` / `O((nk)^3)` in the worst case and exist only as
+This is **functionally linear in $$n$$** for bounded-degree graphs. Dense eigen-decomposition fallbacks
+(for tiny patches or non-convergence) are $$O(s^3)$$ / $$O((nk)^3)$$ in the worst case and exist only as
 safety nets.
 
 ---
