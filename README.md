@@ -39,7 +39,9 @@ with real eigenvectors.
 
 
 $$ Theta_ij = 2*pi*q * (A_ij - A_ji)         \quad\text{(antisymmetric phase from direction)} $$
+
 $$ H_q       = W_sym ⊙ exp(i * Theta)         \quad\text{(Hermitian)} $$
+
 $$ L         = I - D^{-1/2} H_q D^{-1/2} $$
 
 The magnetic charge $$q$$ controls how strongly direction is encoded. The bottom-$$k$$ eigenvectors are
@@ -63,7 +65,9 @@ $$p_j - p_i$$ (translation-invariant, rotation-**equivariant**):
   *scalars* that still encode lengths and angles:
 
   $$Gram_{c,c'} = <g_c, g_c'>          \quad\text{(invariant; encodes angles + lengths)}$$
+  
   $$||g_c||                             \quad\text{(invariant)}$$
+
   $$eig( sum_j w_j (p_j - p_i)(p_j - p_i)^T )   \quad\text{(local covariance spectrum; anisotropy/shape)}$$
 
 Under a rigid motion $$p -> R p + t$$ (with $$R ∈ SO(d)$$), every $$g_c -> R g_c$$, so all inner products
