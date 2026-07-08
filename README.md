@@ -19,7 +19,7 @@ From node coordinates `x_i ∈ R^d` and a directed edge set, build a distance-ba
 Weights depend only on Euclidean distances, so they are already rotation/translation invariant:
 
 
-$$W_ij = exp( -||x_i - x_j||^2 / (sigma_i * sigma_j) )      (self-tuned bandwidth)$$
+$$W_ij = exp( -||x_i - x_j||^2 / (sigma_i * sigma_j) )     \text{(self-tuned bandwidth)}$$
 
 
 with per-node bandwidth `sigma_i` set from the k-th nearest neighbor (self-tuning). A fixed global
@@ -38,8 +38,8 @@ with real eigenvectors.
 **Magnetic mode** — a Hermitian *magnetic Laplacian* that encodes direction as phase:
 
 
-$$ Theta_ij = 2*pi*q * (A_ij - A_ji)         (antisymmetric phase from direction) $$
-$$ H_q       = W_sym ⊙ exp(i * Theta)         (Hermitian) $$
+$$ Theta_ij = 2*pi*q * (A_ij - A_ji)         \text{(antisymmetric phase from direction)} $$
+$$ H_q       = W_sym ⊙ exp(i * Theta)         \text{(Hermitian)} $$
 $$ L         = I - D^{-1/2} H_q D^{-1/2} $$
 
 The magnetic charge `q` controls how strongly direction is encoded. The bottom-`k` eigenvectors are
