@@ -18,9 +18,9 @@ dimension, while retaining local structural and geometric information.
 From node coordinates `x_i ∈ R^d` and a directed edge set, build a distance-based weight matrix.
 Weights depend only on Euclidean distances, so they are already rotation/translation invariant:
 
-```
+
 $$[W_ij = exp( -||x_i - x_j||^2 / (sigma_i * sigma_j) )      (self-tuned bandwidth)]$$
-```
+
 
 with per-node bandwidth `sigma_i` set from the k-th nearest neighbor (self-tuning). A fixed global
 bandwidth `alpha` is also available.
