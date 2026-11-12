@@ -29,7 +29,7 @@ from __future__ import annotations
 
 import warnings
 from dataclasses import dataclass, field
-from typing import List, Optional, Sequence, Tuple
+from typing import List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 import scipy.sparse as sp
@@ -117,14 +117,20 @@ def gcsf_embed(
     coords: np.ndarray,
     edges: np.ndarray,
     params: Optional[GCSFParams] = None,
+    index_base: Union[int, str] = 0,
 ) -> GCSFResult:
     """Compute GCSF embeddings.
 
     Parameters
     ----------
-    coords : (n, d) float array of node positions (any dimension d).
-    edges  : (E, 2) int array of directed edges (0- or 1-indexed; auto-detected).
-    params : GCSFParams.
+    coords     : (n, d) float array of node positions (any dimension d).
+    edges      : (E, 2) int array of directed edges. For an undirected graph,
+                 list both directions. A PyG ``edge_index`` of shape (2, E)
+                 should be passed as ``edge_index.T``.
+    params     : GCSFParams.
+    index_base : 0 (default, PyG/NumPy convention), 1, or "auto". "auto" only
+                 accepts edge lists whose base is unambiguous (index 0 present
+                 -> 0-based; index n present -> 1-based) and raises otherwise.
 
     Returns
     -------
@@ -136,21 +142,7 @@ def gcsf_embed(
     coords = np.asarray(coords, dtype=float)
     n, d = coords.shape
 
-    E = np.asarray(edges)
-    src0 = E[:, 0].astype(np.int64)
-    dst0 = E[:, 1].astype(np.int64)
-    # MATLAB auto-detect: if any 0-index present, it treated data as 0-based and
-    # added 1. Here we want everything 0-based. If the data is 1-based (no zeros
-    # and max == n), shift down.
-    if (src0 == 0).any() or (dst0 == 0).any():
-        src = src0
-        dst = dst0
-    else:
-        # assume 1-indexed
-        src = src0 - 1
-        dst = dst0 - 1
-    src = np.clip(src, 0, n - 1)
-    dst = np.clip(dst, 0, n - 1)
+    src, dst = _resolve_edge_index(edges, n, index_base)
 
     A_dir = sp.csr_matrix(
         (np.ones(len(src)), (src, dst)), shape=(n, n)
@@ -840,6 +832,63 @@ def _build_connection_laplacian(src, dst, Wsym, Qcell, okEdge, wMult, k, n):
 
 
 # ======================================================================
+# Edge-index validation
+# ======================================================================
+def _resolve_edge_index(edges, n, index_base=0):
+    """Return 0-based (src, dst) arrays, validating every index.
+
+    Never guesses silently and never clips: an edge list whose indexing cannot
+    be determined, or that references a node outside 0..n-1, raises ValueError.
+    """
+    E = np.asarray(edges)
+    if E.size == 0:
+        empty = np.zeros(0, dtype=np.int64)
+        return empty, empty.copy()
+    if E.ndim != 2 or E.shape[1] != 2:
+        raise ValueError(
+            f"edges must have shape (E, 2); got {E.shape}. "
+            "For a PyG edge_index of shape (2, E), pass edge_index.T."
+        )
+    if not np.issubdtype(E.dtype, np.integer):
+        if not np.all(np.equal(np.mod(E, 1), 0)):
+            raise ValueError("edge indices must be integers.")
+    E = E.astype(np.int64)
+
+    if isinstance(index_base, str):
+        if index_base.lower() != "auto":
+            raise ValueError(f"index_base must be 0, 1, or 'auto'; got {index_base!r}.")
+        lo, hi = int(E.min()), int(E.max())
+        if lo == 0 and hi == n:
+            raise ValueError(
+                f"edge indices contain both 0 and n={n}, so they are neither "
+                "0-based nor 1-based."
+            )
+        if lo == 0:
+            base = 0
+        elif hi == n:
+            base = 1
+        else:
+            raise ValueError(
+                f"cannot tell whether edge indices are 0- or 1-based (neither 0 "
+                f"nor n={n} appears). Pass index_base=0 or index_base=1."
+            )
+    elif index_base in (0, 1):
+        base = int(index_base)
+    else:
+        raise ValueError(f"index_base must be 0, 1, or 'auto'; got {index_base!r}.")
+
+    src = E[:, 0] - base
+    dst = E[:, 1] - base
+    bad = (src < 0) | (src >= n) | (dst < 0) | (dst >= n)
+    if bad.any():
+        raise ValueError(
+            f"{int(bad.sum())} edge(s) reference nodes outside 0..{n - 1} "
+            f"after applying index_base={base}."
+        )
+    return src, dst
+
+
+# ======================================================================
 # Small sparse helpers
 # ======================================================================
 def _spones(A):
@@ -858,7 +907,8 @@ def load_graph_csv(node_file, edge_file):
     """Load node/edge CSVs matching the MATLAB readmatrix layout.
 
     node_file: first column is an id, remaining columns are coordinates.
-    edge_file: two columns (src, dst).
+    edge_file: two columns (src, dst), returned as stored; the index base is
+               resolved by gcsf_embed(..., index_base=...).
     """
     node_data = np.loadtxt(node_file, delimiter=",", ndmin=2)
     coords = node_data[:, 1:]
@@ -893,12 +943,13 @@ def to_pyg_data(result: GCSFResult):
 # Batch runner
 # ======================================================================
 def batch_gcsf_embed(input_folder, output_folder=None, params=None,
-                     to_pyg=False, write_node_csv=False):
+                     to_pyg=False, write_node_csv=False, index_base="auto"):
     """Process all *_nodes.csv / *_edges.csv pairs in a folder.
 
     Returns a dict {graph_id: GCSFResult} (or PyG Data if to_pyg=True).
     If output_folder is given, graph/sync/node CSVs are written like the
-    MATLAB batch runner.
+    MATLAB batch runner. index_base is passed to gcsf_embed for every graph;
+    set it to 0 or 1 explicitly if any edge file is ambiguous.
     """
     import glob
     import os
@@ -926,7 +977,7 @@ def batch_gcsf_embed(input_folder, output_folder=None, params=None,
         print(f"[{idx}/{len(node_files)}] GCSF embedding: {graph_id}")
         try:
             coords, edges = load_graph_csv(npath, epath)
-            res = gcsf_embed(coords, edges, params)
+            res = gcsf_embed(coords, edges, params, index_base=index_base)
             if output_folder:
                 if write_node_csv:
                     np.savetxt(os.path.join(output_folder, f"{graph_id}_nodePE.csv"),
