@@ -101,7 +101,7 @@ ion such as `[Na+].[O-]C(C)=O`. Any index outside the valid range raises an erro
 Each edge $i \to j$ receives a weight from the distance between its endpoints,
 
 $$
-W_{ij} = \exp\!\left(-\frac{\lVert \mathbf{x}_i - \mathbf{x}_j \rVert_2^2}{\sigma_i \sigma_j}\right),
+W_{ij} = \exp\left(-\frac{\lVert \mathbf{x}_i - \mathbf{x}_j \rVert_2^2}{\sigma_i \sigma_j}\right),
 $$
 
 where $\sigma_i$ is the distance from node $i$ to its $k_\sigma$-th nearest graph neighbor, or its farthest neighbor if it has fewer (self-tuning). A fixed
@@ -122,7 +122,7 @@ $$
 $W^{(s)} = \tfrac{1}{2}(W + W^\top)$,
 
 $$
-H_i = W_i^{(s)} \odot e^{\,\mathrm{i}\,2\pi q_i F_i}, \qquad
+H_i = W_i^{(s)} \odot e^{\mathrm{i} 2\pi q_i F_i}, \qquad
 L_i^{(q)} = I - D_i^{-1/2} H_i D_i^{-1/2}.
 $$
 
@@ -131,10 +131,10 @@ $\eta_i = \lVert A_i - A_i^\top \rVert_F / \lVert A_i + A_i^\top \rVert_F$. On a
 $F_i = 0$, every phase vanishes, and the magnetic Laplacian reduces to the undirected one.
 
 The $k$ lowest eigenpairs $(\mathbf{v}_{i,\ell}, \mu_{i,\ell})$ are kept (optionally dropping the trivial mode),
-and the center node's entries are evaluated at diffusion times $\mathcal{T} = \{t_1, \ldots, t_M\}$:
+and the center node's entries are evaluated at diffusion times $\mathcal{T} = \lbrace t_1, \ldots, t_M \rbrace$:
 
 $$
-\phi_{i,\ell}(t_m) = v_{i,\ell}(c_i)\, \exp(-t_m \mu_{i,\ell}),
+\phi_{i,\ell}(t_m) = v_{i,\ell}(c_i) \exp(-t_m \mu_{i,\ell}),
 $$
 
 where $c_i$ is the position of node $i$ in its patch. In magnetic mode the complex values are split into real
@@ -155,7 +155,7 @@ features keep the upper triangle of $G_i$ and the row norms $\sqrt{(G_i)_{\ell\e
 eigenvalues of the weighted second-moment tensor
 
 $$
-C_i = P_i^\top \mathop{\text{diag}}(\mathbf{w}_i)\, P_i,
+C_i = P_i^\top \operatorname{diag}(\mathbf{w}_i) P_i,
 $$
 
 with $\mathbf{w}_i$ the normalized weighted degrees of the patch. Only inner products and eigenvalues are used, so
@@ -168,11 +168,11 @@ For adjacent nodes whose patches share at least $k$ nodes, the orthogonal (real)
 transport between their frames is
 
 $$
-Q_{ij} = W U^{*}, \qquad \text{where } \bigl(V_j^{\cap}\bigr)^{*} V_i^{\cap} = U \Sigma W^{*}.
+Q_{ij} = W U^{\ast}, \qquad \text{where } \bigl(V_j^{\cap}\bigr)^{\ast} V_i^{\cap} = U \Sigma W^{\ast}.
 $$
 
 The transports, optionally down-weighted by their alignment residual, are assembled into a Hermitian connection
-Laplacian with blocks $-\tilde{w}_{ij} Q_{ij}$ and $-\tilde{w}_{ij} Q_{ij}^{*}$, in the style of vector diffusion
+Laplacian with blocks $-\tilde{w}_{ij} Q_{ij}$ and $-\tilde{w}_{ij} Q_{ij}^{\ast}$, in the style of vector diffusion
 maps. Its lowest eigenvectors give the synchronized encoding.
 
 ### 5. Graph readout (`graphPE`)
