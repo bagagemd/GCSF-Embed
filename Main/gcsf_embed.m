@@ -25,13 +25,13 @@ function [nodePE, syncPE, graphPE] = gcsf_embed(nodeFile, edgeFile, outNodeCSV, 
 %     are rotation-invariant and encode local anisotropy (shape).
 %
 % Inner products / norms / covariance spectra are defined in every dimension,
-% so nothing is hardcoded to d = 3 (no cross products). [N6]
+% so nothing is hardcoded to d = 3 (no cross products). 
 %
 % ---------------------------------------------------------------------------
 % COMPLEXITY (constant d, bounded degree)
 % ---------------------------------------------------------------------------
 % Per node: O(s^2 k)         patch eigensolve   (s = patch size)
-%         + O(s k d + s d^2 + d^3)   geometric channels   [N6]
+%         + O(s k d + s d^2 + d^3)   geometric channels   
 % Sync    : O(m k^3) transport + sparse Hermitian eigensolve on (nk x nk).
 % => functionally linear in n for bounded-degree graphs; s = O(dbar^r).
 % Dense eig fallbacks (tiny patches / eigs non-convergence) are O(s^3) /
@@ -73,26 +73,26 @@ function [nodePE, syncPE, graphPE] = gcsf_embed(nodeFile, edgeFile, outNodeCSV, 
     if ~isfield(params,'magnetic_q'),     params.magnetic_q = 0.25; end
     if ~isfield(params,'magnetic_feat'),  params.magnetic_feat = 'reim'; end
 
-    % [N1] Canonical frame degeneracy tolerance
+    % Canonical frame degeneracy tolerance
     if ~isfield(params,'deg_tol'),        params.deg_tol = 1e-4; end
 
-    % [N3] Adaptive local q
+    % Adaptive local q
     if ~isfield(params,'adaptive_q'),     params.adaptive_q = false; end
 
-    % [N4] Spectral gap truncation
+    % Spectral gap truncation
     if ~isfield(params,'spectral_gap_k'), params.spectral_gap_k = false; end
     if ~isfield(params,'gap_tol'),        params.gap_tol = 0.10; end
 
-    % [N5] Local flow imbalance feature
+    % Local flow imbalance feature
     if ~isfield(params,'include_flow_imbalance'), params.include_flow_imbalance = false; end
 
-    % [N6] SE(d)-invariant equivariant-contracted geometric features
+    % SE(d)-invariant equivariant-contracted geometric features
     if ~isfield(params,'geom_features'), params.geom_features = true;  end
     if ~isfield(params,'geom_gram'),     params.geom_gram     = true;  end % <g_c,g_c'> invariants
     if ~isfield(params,'geom_cov'),      params.geom_cov      = true;  end % local covariance spectrum
     if ~isfield(params,'geom_kframe'),   params.geom_kframe   = 4;     end % # spectral-geometric frames used
 
-    % [N7] Upgraded readout (second-order + spectral-distribution pooling)
+    % Upgraded readout (second-order + spectral-distribution pooling)
     if ~isfield(params,'readout_cov'),       params.readout_cov = true; end   % channel covariance
     if ~isfield(params,'readout_spectral'),  params.readout_spectral = true; end % eigenvalue quantiles
     if ~isfield(params,'readout_nquant'),    params.readout_nquant = 8; end    % # quantiles
@@ -150,9 +150,9 @@ function [nodePE, syncPE, graphPE] = gcsf_embed(nodeFile, edgeFile, outNodeCSV, 
         Dspec = k*M;
     end
 
-    Dfi = double(params.include_flow_imbalance);      % [N5]
+    Dfi = double(params.include_flow_imbalance);
 
-    % [N6] geometric feature width
+    % geometric feature width
     kf = max(0, min(params.geom_kframe, k));
     Dgram = 0; Dcov = 0;
     if params.geom_features
@@ -171,7 +171,7 @@ function [nodePE, syncPE, graphPE] = gcsf_embed(nodeFile, edgeFile, outNodeCSV, 
     % Cache for sync (stores complex V when magnetic)
     localCache = struct('nodes', cell(n,1), 'V', cell(n,1), 'mu', cell(n,1));
 
-    % Store per-node eigenvalues for spectral-distribution readout [N7]
+    % Store per-node eigenvalues for spectral-distribution readout
     muStore = nan(n, k);
 
     % ----------------------------
@@ -183,14 +183,14 @@ function [nodePE, syncPE, graphPE] = gcsf_embed(nodeFile, edgeFile, outNodeCSV, 
             continue;
         end
 
-        % [N5] Local flow imbalance on this patch
+        % Local flow imbalance on this patch
         if params.include_flow_imbalance
             Ap_dir_full = full(A_dir(sub, sub));
             fi_i = local_flow_imbalance(Ap_dir_full);
         end
 
         if params.use_magnetic
-            % ---- Magnetic Laplacian on patch ---- [N3] adaptive q ----
+            % ---- Magnetic Laplacian on patch ---- adaptive q ----
             Wp_dir = full(W_dir(sub, sub));
             Ws     = 0.5 * (Wp_dir + Wp_dir');
             if nnz(Ws) == 0, continue; end
@@ -223,10 +223,10 @@ function [nodePE, syncPE, graphPE] = gcsf_embed(nodeFile, edgeFile, outNodeCSV, 
                 V  = Vall; mu = muall;
             end
 
-            % [N1+N2] canonical complex frame + per-column U(1) phase fix
+            % canonical complex frame + per-column U(1) phase fix
             V = canonical_frame_complex(V, mu, params.deg_tol);
 
-            % [N4] Spectral gap truncation
+            % Spectral gap truncation
             if params.spectral_gap_k
                 k_eff = spectral_gap_truncate(mu, k, params.gap_tol);
                 V(:, k_eff+1:end) = 0;
@@ -258,9 +258,9 @@ function [nodePE, syncPE, graphPE] = gcsf_embed(nodeFile, edgeFile, outNodeCSV, 
                     V  = Vall; mu = muall;
                 end
 
-                V = canonical_frame_real(V, mu, params.deg_tol);   % [N1]
+                V = canonical_frame_real(V, mu, params.deg_tol);
 
-                if params.spectral_gap_k                            % [N4]
+                if params.spectral_gap_k
                     k_eff = spectral_gap_truncate(mu, k, params.gap_tol);
                     V(:, k_eff+1:end) = 0;
                     mu(k_eff+1:end)   = 0;
@@ -299,7 +299,7 @@ function [nodePE, syncPE, graphPE] = gcsf_embed(nodeFile, edgeFile, outNodeCSV, 
             phi_spec = real(phi_blocks);
         end
 
-        % ---- [N6] SE(d)-invariant geometric features ----
+        % ---- SE(d)-invariant geometric features ----
         phi_geom = [];
         if params.geom_features
             % relative positions of patch nodes to the centre (translation-inv,
@@ -317,10 +317,10 @@ function [nodePE, syncPE, graphPE] = gcsf_embed(nodeFile, edgeFile, outNodeCSV, 
         % ---- assemble node feature ----
         phi_i = phi_spec;
         if params.include_flow_imbalance
-            phi_i = [phi_i, fi_i]; %#ok<AGROW>            % [N5]
+            phi_i = [phi_i, fi_i]; %#ok<AGROW>
         end
         if ~isempty(phi_geom)
-            phi_i = [phi_i, phi_geom]; %#ok<AGROW>         % [N6]
+            phi_i = [phi_i, phi_geom]; %#ok<AGROW>
         end
 
         nodePE(i, :) = phi_i;
@@ -336,7 +336,7 @@ function [nodePE, syncPE, graphPE] = gcsf_embed(nodeFile, edgeFile, outNodeCSV, 
     end
 
     % ----------------------------
-    % Optional global synchronisation (UNITARY when complex) [N13]
+    % Optional global synchronisation (UNITARY when complex)
     % ----------------------------
     syncPE = [];
     if params.compute_sync
@@ -387,7 +387,7 @@ function [nodePE, syncPE, graphPE] = gcsf_embed(nodeFile, edgeFile, outNodeCSV, 
     end
 
     % ----------------------------
-    % Graph-level embedding (upgraded readout) [N7]
+    % Graph-level embedding (upgraded readout) 
     % ----------------------------
     graphPE = graph_readout(nodePE, syncPE, muStore, params, n, nUniqueEdges);
     if strlength(params.outGraphCSV) > 0
@@ -397,7 +397,7 @@ end
 
 
 % ======================================================================
-% [N6] SE(d)-invariant geometric features from equivariant contractions
+% SE(d)-invariant geometric features from equivariant contractions
 %
 % Inputs:
 %   P    : (s x d) relative positions of patch nodes to centre (equivariant)
@@ -452,7 +452,7 @@ end
 
 
 % ======================================================================
-% [N1] Canonical frame for REAL degenerate eigenspaces
+% Canonical frame for REAL degenerate eigenspaces
 % ======================================================================
 function V = canonical_frame_real(V, mu, tol)
     if isempty(V), return; end
@@ -481,7 +481,7 @@ end
 
 
 % ======================================================================
-% [N1+N2] Canonical frame for COMPLEX (Hermitian) degenerate eigenspaces
+% Canonical frame for COMPLEX (Hermitian) degenerate eigenspaces
 % + per-column U(1) global-phase canonicalisation
 % ======================================================================
 function V = canonical_frame_complex(V, mu, tol)
@@ -510,7 +510,7 @@ end
 
 
 % ======================================================================
-% [N3] Local directed flow imbalance scalar
+% Local directed flow imbalance scalar
 % ======================================================================
 function fi = local_flow_imbalance(Ap_dir)
     skew = Ap_dir - Ap_dir';
@@ -525,7 +525,7 @@ end
 
 
 % ======================================================================
-% [N4] Spectral-gap-based effective k selection
+% Spectral-gap-based effective k selection
 % ======================================================================
 function k_eff = spectral_gap_truncate(mu, k_max, gap_tol)
     mu = real(mu(:));
@@ -551,7 +551,7 @@ end
 
 
 % ======================================================================
-% [N7] Graph readout: moments + second-order (covariance) pooling
+% Graph readout: moments + second-order (covariance) pooling
 %      + spectral-distribution pooling + explicit size descriptors
 % ======================================================================
 function graphPE = graph_readout(nodePE, syncPE, muStore, params, nNodes, nUniqueEdges)
@@ -565,7 +565,7 @@ function graphPE = graph_readout(nodePE, syncPE, muStore, params, nNodes, nUniqu
     % --- first-order moments ---
     g_moments = [mean(Xn,1), std(Xn,0,1), max(Xn,[],1)];
 
-    % --- [N7] second-order (channel covariance) pooling ---
+    % --- second-order (channel covariance) pooling ---
     g_cov = [];
     if params.readout_cov
         Xc = Xn - mean(Xn,1);
@@ -574,7 +574,7 @@ function graphPE = graph_readout(nodePE, syncPE, muStore, params, nNodes, nUniqu
         g_cov = C(ut).';                            % upper triangle (incl diag)
     end
 
-    % --- [N7] spectral-distribution pooling (patch eigenvalue quantiles) ---
+    % --- spectral-distribution pooling (patch eigenvalue quantiles) ---
     g_spec = [];
     if params.readout_spectral && ~isempty(muStore)
         mu_all = muStore(:);
@@ -605,7 +605,7 @@ function graphPE = graph_readout(nodePE, syncPE, muStore, params, nNodes, nUniqu
         g_sync = [];
     end
 
-    % --- explicit size descriptors ([N7]: log-scaled, not raw counts) ---
+    % --- explicit size descriptors (log-scaled, not raw counts) ---
     if params.graph_include_counts
         dens = nUniqueEdges / max(nNodes*(nNodes-1)/2, 1);
         g_counts = [log1p(nNodes), log1p(nUniqueEdges), dens];
@@ -823,12 +823,12 @@ end
 
 
 % ======================================================================
-% Sync internals  ---  UNITARY Procrustes for complex frames [N13]
+% Sync internals  ---  UNITARY Procrustes for complex frames
 % ======================================================================
 function [Q, ok, res] = transport_Qij(i, j, cache)
 % Best-aligning map Q between overlapping patch frames.
 %   Real case:    Q in O(k)  (orthogonal Procrustes)
-%   Complex case: Q in U(k)  (UNITARY Procrustes)   <-- [N13] fix
+%   Complex case: Q in U(k)  (UNITARY Procrustes)
 % Both come from the SVD of the cross-correlation using the correct
 % (conjugate) transpose; for real inputs this reduces to the old behaviour.
     ok = false; Q = []; res = inf;
@@ -852,7 +852,7 @@ end
 function [H, usedEdges] = build_connection_laplacian(src, dst, Wsym, Qcell, okEdge, wMult, k)
 % Hermitian connection Laplacian. Off-diagonal blocks use Q and its
 % conjugate transpose Q' so that H is Hermitian for complex (unitary) Q
-% and symmetric for real (orthogonal) Q. [N13]
+% and symmetric for real (orthogonal) Q.
     n = size(Wsym,1); Nk = n * k;
     I = []; J = []; V = []; usedEdges = 0;
     if nargin < 6 || isempty(wMult), wMult = ones(numel(src),1); end
