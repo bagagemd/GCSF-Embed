@@ -112,7 +112,7 @@ are unaffected by translations, rotations, and reflections.
 
 For each node $i$, the $r$-hop patch $\mathcal{N}_r(i)$ is extracted and a normalized Laplacian is built on it.
 
-**Undirected mode.** With symmetric weights $$W^{(u)}_{ij} = \max(W_{ij}, W_{ji})$$ restricted to the patch,
+**Undirected mode.** With symmetric weights $W^{(u)}_{ij} = \max(W_{ij}, W_{ji})$ restricted to the patch,
 
 $$
 L_i = I - D_i^{-1/2} W_i D_i^{-1/2}.
@@ -155,7 +155,7 @@ features keep the upper triangle of $G_i$ and the row norms $\sqrt{(G_i)_{\ell\e
 eigenvalues of the weighted second-moment tensor
 
 $$
-C_i = P_i^\top \operatorname{diag}(\mathbf{w}_i) P_i,
+C_i = P_i^\top \\mathop{\mathrm{diag}}(\mathbf{w}_i) P_i,
 $$
 
 with $\mathbf{w}_i$ the normalized weighted degrees of the patch. Only inner products and eigenvalues are used, so
