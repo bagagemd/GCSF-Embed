@@ -49,6 +49,7 @@ function [nodePE, syncPE, graphPE] = gcsf_embed(nodeFile, edgeFile, outNodeCSV, 
     if ~isfield(params,'alpha'),        params.alpha = 1.0; end
     if ~isfield(params,'self_tuned'),   params.self_tuned = true; end
     if ~isfield(params,'sigma_k'),      params.sigma_k = 8; end
+    if ~isfield(params,'index_base'),   params.index_base = 'auto'; end  % 0, 1, or 'auto'
 
     % Diffusion defaults
     if ~isfield(params,'use_laplacian'), params.use_laplacian = true; end
@@ -109,12 +110,7 @@ function [nodePE, syncPE, graphPE] = gcsf_embed(nodeFile, edgeFile, outNodeCSV, 
     d        = size(coords, 2);
 
     E = readmatrix(edgeFile);
-    src0 = E(:,1); dst0 = E(:,2);
-    if any(src0 == 0) || any(dst0 == 0)
-        src_raw = src0 + 1; dst_raw = dst0 + 1;
-    else
-        src_raw = src0;     dst_raw = dst0;
-    end
+    [src_raw, dst_raw] = resolve_edge_index(E, n, params.index_base);
 
     A_dir = sparse(src_raw, dst_raw, 1, n, n);
     A_dir = spones(A_dir);
@@ -662,6 +658,58 @@ end
 
 
 % ======================================================================
+% Edge-index validation
+% ======================================================================
+function [src, dst] = resolve_edge_index(E, n, base)
+% Convert an edge list to 1-based MATLAB indices, validating every index.
+%   base = 0, 1, or 'auto'. 'auto' accepts the file only when its indexing
+%   is unambiguous (index 0 present -> 0-based; index n present -> 1-based)
+%   and errors otherwise. Indices are never guessed silently or clipped.
+    if isempty(E)
+        src = zeros(0,1); dst = zeros(0,1);
+        return;
+    end
+    if size(E,2) < 2
+        error('gcsf_embed:edges', 'Edge file must have two columns (src, dst).');
+    end
+    E = E(:, 1:2);
+    if any(E(:) ~= round(E(:)))
+        error('gcsf_embed:edges', 'Edge indices must be integers.');
+    end
+
+    if ischar(base) || isstring(base)
+        if ~strcmpi(base, 'auto')
+            error('gcsf_embed:edges', 'params.index_base must be 0, 1, or ''auto''.');
+        end
+        lo = min(E(:)); hi = max(E(:));
+        if lo == 0 && hi == n
+            error('gcsf_embed:edges', ...
+                'Edge indices contain both 0 and n = %d, so they are neither 0- nor 1-based.', n);
+        elseif lo == 0
+            base = 0;
+        elseif hi == n
+            base = 1;
+        else
+            error('gcsf_embed:edges', ...
+                ['Cannot tell whether edge indices are 0- or 1-based (neither 0 nor ' ...
+                 'n = %d appears). Set params.index_base to 0 or 1.'], n);
+        end
+    elseif ~(isequal(base, 0) || isequal(base, 1))
+        error('gcsf_embed:edges', 'params.index_base must be 0, 1, or ''auto''.');
+    end
+
+    src = E(:,1) + (1 - base);
+    dst = E(:,2) + (1 - base);
+    bad = src < 1 | src > n | dst < 1 | dst > n;
+    if any(bad)
+        error('gcsf_embed:edges', ...
+            '%d edge(s) reference nodes outside 1..%d after applying index_base = %d.', ...
+            nnz(bad), n, base);
+    end
+end
+
+
+% ======================================================================
 % Neighbourhoods
 % ======================================================================
 function sub = rhop_nodes(i, nbrs, r)
@@ -852,52 +900,4 @@ function [H, usedEdges] = build_connection_laplacian(src, dst, Wsym, Qcell, okEd
         H = sparse(I, J, real(V), Nk, Nk);
         H = (H + H.') / 2;         % real symmetrisation
     end
-end
-
-
-% ======================================================================
-% Batch runner
-% ======================================================================
-function batch_gcsf_embed(inputFolder, outputFolder, params) %#ok<DEFNU>
-    if nargin < 3, params = struct(); end
-    if ~exist(outputFolder, "dir"), mkdir(outputFolder); end
-    if ~isfield(params,'write_node_csv'), params.write_node_csv = false; end
-    nodeFiles = dir(fullfile(inputFolder, '*_nodes.csv'));
-    if isempty(nodeFiles)
-        warning('No *_nodes.csv files found in: %s', inputFolder);
-        return;
-    end
-    nTotal = numel(nodeFiles); nDone = 0; nSkip = 0; nFail = 0;
-    for ii = 1:nTotal
-        nodeFileName = nodeFiles(ii).name;
-        graphID      = extractBefore(nodeFileName, '_nodes.csv');
-        nodePath     = fullfile(inputFolder, [graphID '_nodes.csv']);
-        edgePath     = fullfile(inputFolder, [graphID '_edges.csv']);
-        if ~exist(edgePath, "file")
-            warning('Skipping %s (missing edge file)', graphID);
-            nSkip = nSkip + 1; continue;
-        end
-        params2 = params;
-        if params2.write_node_csv
-            outNodeCSV = fullfile(outputFolder, [graphID '_nodePE.csv']);
-        else
-            outNodeCSV = "";
-        end
-        if isfield(params2,'compute_sync') && params2.compute_sync
-            params2.outSyncCSV = fullfile(outputFolder, [graphID '_syncPE.csv']);
-        else
-            params2.outSyncCSV = "";
-        end
-        params2.outGraphCSV = fullfile(outputFolder, [graphID '_graphPE.csv']);
-        fprintf('[%d/%d] GCSF embedding: %s\n', ii, nTotal, graphID);
-        try
-            gcsf_embed(nodePath, edgePath, outNodeCSV, params2);
-            nDone = nDone + 1;
-        catch ME
-            warning('FAILED on %s: %s', graphID, ME.message);
-            nFail = nFail + 1;
-        end
-    end
-    fprintf('Batch complete. Done=%d, Skipped=%d, Failed=%d (Total=%d)\n', ...
-        nDone, nSkip, nFail, nTotal);
 end
