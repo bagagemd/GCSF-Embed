@@ -155,7 +155,7 @@ features keep the upper triangle of $G_i$ and the row norms $\sqrt{(G_i)_{\ell\e
 eigenvalues of the weighted second-moment tensor
 
 $$
-C_i = P_i^\top \operatorname{diag}(\mathbf{w}_i)\, P_i,
+C_i = P_i^\top \mathop{\text{diag}(\mathbf{w}_i)\, P_i,
 $$
 
 with $\mathbf{w}_i$ the normalized weighted degrees of the patch. Only inner products and eigenvalues are used, so
