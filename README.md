@@ -3,7 +3,7 @@
 **Local spectral–geometric positional encodings for spatial graphs, with optional support for directed edges.**
 
 GCSF (**G**eometric **C**onnection **S**pectral **F**eatures) computes training-free encodings for graphs whose
-nodes carry coordinates in $\mathbb{R}^d$ (any dimension) and whose edges may be directed. Around every node it
+nodes carry coordinates in $`\mathbb{R}^d`$ (any dimension) and whose edges may be directed. Around every node it
 builds a local patch, computes multiscale diffusion features from the patch Laplacian, and couples them with the
 patch geometry through quantities that do not change under translations, rotations, or reflections of the
 coordinates. A magnetic Laplacian handles directed edges, and an optional connection-Laplacian stage
@@ -98,73 +98,73 @@ ion such as `[Na+].[O-]C(C)=O`. Any index outside the valid range raises an erro
 
 ### 1. Spatial edge weights
 
-Each edge $i \to j$ receives a weight from the distance between its endpoints,
+Each edge $`i \to j`$ receives a weight from the distance between its endpoints,
 
 $$
 W_{ij} = \exp\left(-\frac{\lVert \mathbf{x}_i - \mathbf{x}_j \rVert_2^2}{\sigma_i \sigma_j}\right),
 $$
 
-where $\sigma_i$ is the distance from node $i$ to its $k_\sigma$-th nearest graph neighbor, or its farthest neighbor if it has fewer (self-tuning). A fixed
-bandwidth, $\sigma_i\sigma_j = \alpha^2$, is also available. Because the weights depend only on distances, they
+where $`\sigma_i`$ is the distance from node $`i`$ to its $`k_\sigma`$-th nearest graph neighbor, or its farthest neighbor if it has fewer (self-tuning). A fixed
+bandwidth, $`\sigma_i\sigma_j = \alpha^2`$, is also available. Because the weights depend only on distances, they
 are unaffected by translations, rotations, and reflections.
 
 ### 2. Local spectra and multiscale diffusion features (`nodePE`)
 
-For each node $i$, the $r$-hop patch $\mathcal{N}_r(i)$ is extracted and a normalized Laplacian is built on it.
+For each node $`i`$, the $`r`$-hop patch $`\mathcal{N}_r(i)`$ is extracted and a normalized Laplacian is built on it.
 
-**Undirected mode.** With symmetric weights $W^{(u)}_{ij} = \max(W_{ij}, W_{ji})$ restricted to the patch,
+**Undirected mode.** With symmetric weights $`W^{(u)}_{ij} = \max(W_{ij}, W_{ji})`$ restricted to the patch,
 
 $$
 L_i = I - D_i^{-1/2} W_i D_i^{-1/2}.
 $$
 
-**Magnetic mode.** Direction is encoded as complex phase. With $F_i = A_i - A_i^\top$ and symmetric amplitude
-$W^{(s)} = \tfrac{1}{2}(W + W^\top)$,
+**Magnetic mode.** Direction is encoded as complex phase. With $`F_i = A_i - A_i^\top`$ and symmetric amplitude
+$`W^{(s)} = \tfrac{1}{2}(W + W^\top)`$,
 
 $$
 H_i = W_i^{(s)} \odot e^{\mathrm{i} 2\pi q_i F_i}, \qquad
 L_i^{(q)} = I - D_i^{-1/2} H_i D_i^{-1/2}.
 $$
 
-The charge $q_i$ is either fixed or scaled by the patch's flow imbalance,
-$\eta_i = \lVert A_i - A_i^\top \rVert_F / \lVert A_i + A_i^\top \rVert_F$. On an undirected graph
-$F_i = 0$, every phase vanishes, and the magnetic Laplacian reduces to the undirected one.
+The charge $`q_i`$ is either fixed or scaled by the patch's flow imbalance,
+$`\eta_i = \lVert A_i - A_i^\top \rVert_F / \lVert A_i + A_i^\top \rVert_F`$. On an undirected graph
+$`F_i = 0`$, every phase vanishes, and the magnetic Laplacian reduces to the undirected one.
 
-The $k$ lowest eigenpairs $(\mathbf{v}_{i,\ell}, \mu_{i,\ell})$ are kept (optionally dropping the trivial mode),
-and the center node's entries are evaluated at diffusion times $\mathcal{T} = \lbrace t_1, \ldots, t_M \rbrace$:
+The $`k`$ lowest eigenpairs $`(\mathbf{v}_{i,\ell}, \mu_{i,\ell})`$ are kept (optionally dropping the trivial mode),
+and the center node's entries are evaluated at diffusion times $`\mathcal{T} = \lbrace t_1, \ldots, t_M \rbrace`$:
 
 $$
 \phi_{i,\ell}(t_m) = v_{i,\ell}(c_i) \exp(-t_m \mu_{i,\ell}),
 $$
 
-where $c_i$ is the position of node $i$ in its patch. In magnetic mode the complex values are split into real
+where $`c_i`$ is the position of node $`i`$ in its patch. In magnetic mode the complex values are split into real
 and imaginary parts (`magnetic_feat = 'reim'`) or replaced by their magnitudes (`'abs'`).
 
 ### 3. Invariant spectral–geometric features
 
-With patch coordinates centered at node $i$, $P_i = X_{\mathcal{N}_r(i)} - \mathbf{1}\mathbf{x}_i^\top$, the
-first $k_f$ spectral components are projected onto the geometry:
+With patch coordinates centered at node $`i`$, $`P_i = X_{\mathcal{N}_r(i)} - \mathbf{1}\mathbf{x}_i^\top`$, the
+first $`k_f`$ spectral components are projected onto the geometry:
 
 $$
 B_i = \bigl(V_i^{(k_f)}\bigr)^\top P_i \in \mathbb{R}^{k_f \times d}.
 $$
 
-Row $\ell$ records how the patch geometry projects onto spectral mode $\ell$. Under any orthogonal
-transformation $R \in O(d)$, $B_i \mapsto B_i R$, so the Gram matrix $G_i = B_i B_i^\top$ is unchanged. The
-features keep the upper triangle of $G_i$ and the row norms $\sqrt{(G_i)_{\ell\ell}}$, plus the ordered
+Row $`\ell`$ records how the patch geometry projects onto spectral mode $`\ell`$. Under any orthogonal
+transformation $`R \in O(d)`$, $`B_i \mapsto B_i R`$, so the Gram matrix $`G_i = B_i B_i^\top`$ is unchanged. The
+features keep the upper triangle of $`G_i`$ and the row norms $`\sqrt{(G_i)_{\ell\ell}}`$, plus the ordered
 eigenvalues of the weighted second-moment tensor
 
 $$
-C_i = P_i^\top \\mathop{\mathrm{diag}}(\mathbf{w}_i) P_i,
+C_i = P_i^\top \\mathop{\mathrm{diag}(\mathbf{w}_i) P_i,
 $$
 
-with $\mathbf{w}_i$ the normalized weighted degrees of the patch. Only inner products and eigenvalues are used, so
-the construction works in any dimension $d$ and is invariant under the full Euclidean group $E(d)$, reflections
+with $`\mathbf{w}_i`$ the normalized weighted degrees of the patch. Only inner products and eigenvalues are used, so
+the construction works in any dimension $`d`$ and is invariant under the full Euclidean group $`E(d)`$, reflections
 included.
 
 ### 4. Global synchronization (`syncPE`, optional)
 
-For adjacent nodes whose patches share at least $k$ nodes, the orthogonal (real) or unitary (magnetic) Procrustes
+For adjacent nodes whose patches share at least $`k`$ nodes, the orthogonal (real) or unitary (magnetic) Procrustes
 transport between their frames is
 
 $$
@@ -172,7 +172,7 @@ Q_{ij} = W U^{\ast}, \qquad \text{where } \bigl(V_j^{\cap}\bigr)^{\ast} V_i^{\ca
 $$
 
 The transports, optionally down-weighted by their alignment residual, are assembled into a Hermitian connection
-Laplacian with blocks $-\tilde{w}_{ij} Q_{ij}$ and $-\tilde{w}_{ij} Q_{ij}^{\ast}$, in the style of vector diffusion
+Laplacian with blocks $`-\tilde{w}_{ij} Q_{ij}`$ and $`-\tilde{w}_{ij} Q_{ij}^{\ast}`$, in the style of vector diffusion
 maps. Its lowest eigenvectors give the synchronized encoding.
 
 ### 5. Graph readout (`graphPE`)
@@ -182,7 +182,7 @@ Node features are pooled with statistics that do not depend on node order:
 - coordinatewise mean, standard deviation, and maximum;
 - the upper triangle of the feature covariance (second-order pooling);
 - quantiles, mean, and standard deviation of all retained patch eigenvalues;
-- size descriptors: $\log(1+n)$, $\log(1+|E|)$, and edge density;
+- size descriptors: $`\log(1+n)`$, $`\log(1+|E|)`$, and edge density;
 - the same moments of `syncPE`, when included.
 
 ---
@@ -206,11 +206,11 @@ Node features are pooled with statistics that do not depend on node order:
 
 ## Complexity
 
-For fixed $r$ and $k$, every patch is processed independently. With largest patch size $m$, the local
-eigendecompositions cost at most $O(n m^3)$ with a dense solver, and the geometric contractions add a lower-order
-cost. The node-level construction is therefore linear in $n$ when patch size is bounded (bounded degree and small
-$r$), although $m$ can grow quickly with $r$ on dense graphs. Synchronization adds one Procrustes problem per
-eligible edge, $O(m k^2 + k^3)$ each, and one sparse eigenproblem of dimension $nk$.
+For fixed $`r`$ and $`k`$, every patch is processed independently. With largest patch size $`m`$, the local
+eigendecompositions cost at most $`O(n m^3)`$ with a dense solver, and the geometric contractions add a lower-order
+cost. The node-level construction is therefore linear in $`n`$ when patch size is bounded (bounded degree and small
+$`r`$), although $`m`$ can grow quickly with $`r`$ on dense graphs. Synchronization adds one Procrustes problem per
+eligible edge, $`O(m k^2 + k^3)`$ each, and one sparse eigenproblem of dimension $`nk`$.
 
 ---
 
@@ -230,18 +230,18 @@ eligible edge, $O(m k^2 + k^3)$ each, and one sparse eigenproblem of dimension $
 | `r` | patch radius (hops) | 2 |
 | `T` | diffusion times | `[0.1 1 10]` |
 | `self_tuned` | self-tuning bandwidth | `true` |
-| `sigma_k` | neighbor rank used for $\sigma_i$ | 8 |
+| `sigma_k` | neighbor rank used for $`\sigma_i`$ | 8 |
 | `alpha` | fixed bandwidth (when `self_tuned` is false) | 1.0 |
 | `drop_trivial` | drop the lowest eigenpair | `true` |
 | `deg_tol` | tolerance for treating eigenvalues as repeated | `1e-4` |
 | `use_magnetic` | magnetic (directed) Laplacian | `false` |
-| `magnetic_q` | magnetic charge $q$ | 0.25 |
-| `adaptive_q` | scale $q$ by local flow imbalance | `false` |
+| `magnetic_q` | magnetic charge $`q`$ | 0.25 |
+| `adaptive_q` | scale $`q`$ by local flow imbalance | `false` |
 | `magnetic_feat` | `'reim'` or `'abs'` | `'reim'` |
-| `include_flow_imbalance` | append $\eta_i$ to node features | `false` |
+| `include_flow_imbalance` | append $`\eta_i`$ to node features | `false` |
 | `spectral_gap_k` | suppress modes above the first large spectral gap | `false` |
 | `geom_features` | invariant geometric block | `true` |
-| `geom_kframe` | number of spectral components $k_f$ used in the geometric block | 4 |
+| `geom_kframe` | number of spectral components $`k_f`$ used in the geometric block | 4 |
 | `compute_sync` | compute the synchronized encoding | `false` |
 | `sync_dim` | number of synchronized eigenvectors | 1 |
 | `readout_cov` | covariance pooling in the readout | `true` |
