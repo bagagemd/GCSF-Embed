@@ -168,7 +168,7 @@ For adjacent nodes whose patches share at least $k$ nodes, the orthogonal (real)
 transport between their frames is
 
 $$
-Q_{ij} = W U^{*}, \qquad \text{where } \(V_j^{\cap}\)^{*} V_i^{\cap} = U \Sigma W^{*}.
+Q_{ij} = W U^{*}, \qquad \text{where } \bigl(V_j^{\cap}\bigr)^{*} V_i^{\cap} = U \Sigma W^{*}.
 $$
 
 The transports, optionally down-weighted by their alignment residual, are assembled into a Hermitian connection
