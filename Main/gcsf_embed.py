@@ -1,9 +1,8 @@
 """
 GCSF — Geometric/Graph Connection Spectral Features (Python port).
 
-Dimension-general (any d) positional encoding for directed spatial graphs,
-ported from the MATLAB reference implementation. Uses only numpy + scipy for
-computation and (optionally) torch / torch_geometric for output.
+Dimension-general (any d) positional encoding for directed spatial graphs. 
+Uses only numpy + scipy for computation and (optionally) torch / torch_geometric for output.
 
 Three levels of embedding are produced:
     node_pe  : per-node local spectral + SE(d)-invariant geometric features
@@ -16,7 +15,7 @@ scalars (Gram matrices / norms of spectral-geometric frame vectors, and the
 eigenvalues of a local covariance/gyration tensor). Everything is defined for
 any dimension d (only inner products, no cross products).
 
-Notes on the port:
+Notes on the implementation:
   * MATLAB is 1-indexed; here everything is 0-indexed internally.
   * eigs(...,'smallestreal') / eigs(...,'largestreal') -> scipy.sparse.linalg.eigsh
     with sigma/which, falling back to dense numpy.linalg.eig(h) on failure,
@@ -71,26 +70,26 @@ class GCSFParams:
     magnetic_q: float = 0.25
     magnetic_feat: str = "reim"  # 'reim' or 'abs'
 
-    # [N1] canonical frame degeneracy tolerance
+    # canonical frame degeneracy tolerance
     deg_tol: float = 1e-4
 
-    # [N3] adaptive local q
+    # adaptive local q
     adaptive_q: bool = False
 
-    # [N4] spectral gap truncation
+    # spectral gap truncation
     spectral_gap_k: bool = False
     gap_tol: float = 0.10
 
-    # [N5] local flow imbalance feature
+    # local flow imbalance feature
     include_flow_imbalance: bool = False
 
-    # [N6] SE(d)-invariant geometric features
+    # SE(d)-invariant geometric features
     geom_features: bool = True
     geom_gram: bool = True
     geom_cov: bool = True
     geom_kframe: int = 4
 
-    # [N7] upgraded readout
+    # readout
     readout_cov: bool = True
     readout_spectral: bool = True
     readout_nquant: int = 8
@@ -168,7 +167,7 @@ def gcsf_embed(
     nbrs: List[np.ndarray] = [A_nbr.indices[A_nbr.indptr[u]:A_nbr.indptr[u + 1]]
                               for u in range(n)]
 
-    # --- feature dimensionality bookkeeping ---
+    # --- feature dimensionality ---
     k = params.k
     T = params.T
     M = T.size
@@ -312,7 +311,7 @@ def gcsf_embed(
         else:
             phi_spec = phi_blocks.real.ravel()
 
-        # --- [N6] geometric features ---
+        # --- geometric features ---
         phi_geom = np.array([])
         if params.geom_features:
             P = coords[sub, :] - coords[i, :]
@@ -408,7 +407,7 @@ def _compute_sync(A_und, W_sym_csr, cache_nodes, cache_V, k, params, n):
 
 
 # ======================================================================
-# [N6] SE(d)-invariant geometric features
+# SE(d)-invariant geometric features
 # ======================================================================
 def _geom_invariants(P, V, mu, wloc, kf, use_gram, use_cov, d):
     feats = []
@@ -438,7 +437,7 @@ def _geom_invariants(P, V, mu, wloc, kf, use_gram, use_cov, d):
 
 
 # ======================================================================
-# [N1] Canonical frames
+# Canonical frames
 # ======================================================================
 def _canonical_frame_real(V, mu, tol):
     if V.size == 0:
@@ -495,7 +494,7 @@ def _canonical_frame_complex(V, mu, tol):
 
 
 # ======================================================================
-# [N3] Local directed flow imbalance
+# Local directed flow imbalance
 # ======================================================================
 def _local_flow_imbalance(Ap_dir):
     skew = Ap_dir - Ap_dir.T
@@ -507,7 +506,7 @@ def _local_flow_imbalance(Ap_dir):
 
 
 # ======================================================================
-# [N4] Spectral-gap-based effective k
+# Spectral-gap-based effective k
 # ======================================================================
 def _spectral_gap_truncate(mu, k_max, gap_tol):
     mu = np.real(mu).ravel()
@@ -526,7 +525,7 @@ def _spectral_gap_truncate(mu, k_max, gap_tol):
 
 
 # ======================================================================
-# [N7] Graph readout
+# Graph readout
 # ======================================================================
 def _graph_readout(node_pe, sync_pe, mu_store, params, n_nodes, n_unique_edges):
     Xn = node_pe
